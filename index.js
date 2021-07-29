@@ -6,11 +6,11 @@ const bodyParser = require("body-parser");
 const path = require("path");
 
 const app = express();
-app.use(express.static("../aktcl_cep_client/build"));
+app.use(express.static("../cep_client/build"));
 app.use(cors());
 app.use(bodyParser.urlencoded({ extended: false, limit: "5000mb" }));
 app.use(bodyParser.json({ limit: "5000mb" }));
-const port = 5009;
+const port = 5003;
 
 const MongoClient = require("mongodb").MongoClient;
 // const MongoClient = require("mongodb").MongoClient;
@@ -170,9 +170,7 @@ client.connect((err) => {
     });
   });
   app.get("*", (req, res) => {
-    res.sendFile(
-      path.join(__dirname, "../aktcl_cep_client/build", "index.html")
-    );
+    res.sendFile(path.join(__dirname, "../cep_client/build", "index.html"));
   });
 });
 
