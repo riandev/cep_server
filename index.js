@@ -3,6 +3,7 @@ const cors = require("cors");
 require("dotenv").config();
 const ObjectID = require("mongodb").ObjectID;
 const bodyParser = require("body-parser");
+const _ = require("lodash");
 const path = require("path");
 
 const app = express();
@@ -167,6 +168,40 @@ client.connect((err) => {
     console.log(detailsReports);
     detailsReportCollection.insertMany(detailsReports).then((result) => {
       res.send(result.insertedCount > 0);
+    });
+  });
+  app.get("/reportDates", async (req, res) => {
+    async function analyzeData() {
+      let result = [];
+      try {
+        let data = await leadsCollection.find({}).toArray();
+        let dates = _.groupBy(JSON.parse(JSON.stringify(data)), function (d) {
+          return d.data_date;
+        });
+        for (date in dates) {
+          result.push({
+            date: date,
+          });
+        }
+      } catch (e) {
+        console.log(e.message);
+      }
+      res.send(result);
+    }
+    analyzeData();
+  });
+  app.get("/prepareByDate", (req, res) => {
+    let pDate = req.query;
+    console.log(pDate.date);
+    leadsCollection.find({ data_date: pDate?.date }).toArray((err, result) => {
+      res.send(result);
+    });
+  });
+  app.delete("/deleteByDate", (req, res) => {
+    let pDate = req.query;
+    console.log(pDate.date);
+    leadsCollection.deleteMany({ data_date: pDate.date }).then((result) => {
+      res.send(result.deletedCount > 0);
     });
   });
   app.get("*", (req, res) => {
