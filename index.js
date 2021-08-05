@@ -204,6 +204,194 @@ client.connect((err) => {
       res.send(result.deletedCount > 0);
     });
   });
+  app.get("/initialLead", (req, res) => {
+    leadsCollection
+      .aggregate([
+        {
+          $match: {
+            $and: [{ for_d: null }, { Data_Status: "Valid_Data" }],
+          },
+        },
+      ])
+      .toArray((err, results) => {
+        let output = [];
+        let users = _.groupBy(
+          JSON.parse(JSON.stringify(results)),
+          function (d) {
+            return d.TM_USER_NAME;
+          }
+        );
+        for (user in users) {
+          output.push({
+            // userId: user,
+            // consumers: users[user],
+            // countByUser: users[user].length,
+            packetSales: users[user]
+              .filter((x) => x.stick_packet === 1)
+              .slice(0, 5)
+              .map((d) => {
+                let datas = {};
+                (datas.id = d._id),
+                  (datas.diid = d.DIID),
+                  (datas.data_date = d.data_date),
+                  (datas.r_name = d.r_name),
+                  (datas.Consumer_No = d.Consumer_No);
+                return datas;
+              }),
+            freeSampling: users[user]
+              .filter((x) => x.stick_packet === 2)
+              .slice(
+                0,
+                users[user].filter((x) => x.stick_packet === 1).length < 5
+                  ? 6 - users[user].filter((x) => x.stick_packet === 1).length
+                  : 1
+              )
+              .map((d) => {
+                let datas = {};
+                (datas.id = d._id),
+                  (datas.diid = d.DIID),
+                  (datas.data_date = d.data_date),
+                  (datas.r_name = d.r_name),
+                  (datas.Consumer_No = d.Consumer_No);
+                return datas;
+              }),
+          });
+        }
+        res.send(output);
+      });
+  });
+  app.patch("/updateInitialLead", async (req, res) => {
+    const initialLead = req.body;
+    console.log(initialLead);
+    let buldOperation = [];
+    let counter = 0;
+
+    try {
+      initialLead.forEach(async (element) => {
+        buldOperation.push({
+          updateOne: {
+            filter: { _id: ObjectID(element.id) },
+            update: {
+              $set: {
+                for_d: element.for_d,
+              },
+            },
+          },
+        });
+        counter++;
+
+        if (counter % 500 == 0) {
+          await leadsCollection.bulkWrite(buldOperation);
+          buldOperation = [];
+        }
+      });
+      if (counter % 500 != 0) {
+        await leadsCollection.bulkWrite(buldOperation);
+        buldOperation = [];
+      }
+      console.log("DONE ================== ");
+
+      res.status(200).json({
+        message: true,
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  });
+  app.get("/regenerate", (req, res) => {
+    leadsCollection
+      .aggregate([
+        {
+          $match: {
+            $and: [{ Data_Status: "Valid_Data" }],
+          },
+        },
+      ])
+      .toArray((err, results) => {
+        let output = [];
+        let users = _.groupBy(
+          JSON.parse(JSON.stringify(results)),
+          function (d) {
+            return d.TM_USER_NAME;
+          }
+        );
+        for (user in users) {
+          output.push({
+            // userId: user,
+            // consumers: users[user],
+            // countByUser: users[user].length,
+            // callDone: users[user].filter(
+            //   (x) => x.answer1 === "yes" || x.answer1 === "no"
+            // ).length,
+            newLead: users[user]
+              .filter(
+                (x) =>
+                  x.stick_packet === 2 &&
+                  (x.answer1 === null || x.answer1 === undefined)
+              )
+              .slice(
+                0,
+                users[user].filter(
+                  (x) => x.answer1 === "yes" || x.answer1 === "no"
+                ).length < 6
+                  ? 6 -
+                      users[user].filter(
+                        (x) => x.answer1 === "yes" || x.answer1 === "no"
+                      ).length
+                  : 0
+              )
+              .map((d) => {
+                let datas = {};
+                (datas.id = d._id),
+                  (datas.diid = d.DIID),
+                  (datas.data_date = d.data_date),
+                  (datas.r_name = d.r_name),
+                  (datas.Consumer_No = d.Consumer_No);
+                return datas;
+              }),
+          });
+        }
+        res.send(output);
+      });
+  });
+  app.patch("/regenerateUpdate", async (req, res) => {
+    const regenerateLead = req.body;
+    console.log(regenerateLead);
+    let buldOperation = [];
+    let counter = 0;
+
+    try {
+      regenerateLead.forEach(async (element) => {
+        buldOperation.push({
+          updateOne: {
+            filter: { _id: ObjectID(element.id) },
+            update: {
+              $set: {
+                for_d: element.for_d,
+              },
+            },
+          },
+        });
+        counter++;
+
+        if (counter % 500 == 0) {
+          await leadsCollection.bulkWrite(buldOperation);
+          buldOperation = [];
+        }
+      });
+      if (counter % 500 != 0) {
+        await leadsCollection.bulkWrite(buldOperation);
+        buldOperation = [];
+      }
+      console.log("DONE ================== ");
+
+      res.status(200).json({
+        message: true,
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  });
   app.get("*", (req, res) => {
     res.sendFile(path.join(__dirname, "../cep_client/build", "index.html"));
   });
