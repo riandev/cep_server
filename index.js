@@ -78,6 +78,8 @@ client.connect((err) => {
             answer10: answers.ans10,
             answer11: answers.ans11,
             agentID: answers.agentID,
+            callDate: answers.callDate,
+            callTime: answers.callTime,
           },
         }
       )
@@ -136,6 +138,8 @@ client.connect((err) => {
             qcChecked: update.qcChecked,
             remarks: update.remarks,
             rating: update.rating,
+            qcDate: update.qcDate,
+            qcTime: update.qcTime,
           },
         }
       )
