@@ -205,11 +205,17 @@ client.connect((err) => {
     });
   });
   app.get("/initialLead", (req, res) => {
+    let initDate = req.query.initDate;
+    // console.log(initDate);
     leadsCollection
       .aggregate([
         {
           $match: {
-            $and: [{ for_d: null }, { Data_Status: "Valid_Data" }],
+            $and: [
+              { for_d: null },
+              { Data_Status: "Valid_Data" },
+              { data_date: initDate },
+            ],
           },
         },
       ])
@@ -299,11 +305,13 @@ client.connect((err) => {
     }
   });
   app.get("/regenerate", (req, res) => {
+    const regenDate = req.query.regenDate;
+    console.log(regenDate);
     leadsCollection
       .aggregate([
         {
           $match: {
-            $and: [{ Data_Status: "Valid_Data" }],
+            $and: [{ Data_Status: "Valid_Data" }, { data_date: regenDate }],
           },
         },
       ])
